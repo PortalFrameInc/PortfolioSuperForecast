@@ -1,0 +1,19 @@
+# Configuration de Base
+
+general:
+  rf: 0.04
+  conf_level: 0.95
+  price_start_year: 2010
+
+simulation:
+  simulations: 1000
+  years: 20
+  frequency: "daily"
+
+frontier:
+  min_weight: 0 # Poids minimum par titre (0 = peut être exclu)
+  max_weight: 100 # Poids maximum par titre
+  weight_increment: 5 # Incrément des poids (10%)
+  num_sims: 100 # Simulations par combinaison
+  years: 10 # Durée de simulation
+  frequency: "monthly" # Fréquence

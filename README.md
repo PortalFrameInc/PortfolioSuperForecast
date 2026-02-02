@@ -1,2 +1,288 @@
 # PortfolioSuperForecast
-Model frontier et simulation de portfolio
+
+Etait à la base un fork de [monte-carlo-for-investments](https://github.com/kconstable/monte-carlo-for-investments) de kconstable, dont l'objectif initial était de lancer des simulations sur d'autres actifs, cependant j'ai fait beaucoup ajouts et de modifs pour mieux correspondre à mes besoins.
+
+## Description
+
+Dans ce projet, j'utilise des simulations de Monte-Carlo pour sélectionner les pondérations optimales d'un portefeuille d'actifs qui offre le meilleur rendement ajusté au risque.
+Il y a deux classes principales : **Security** et **Portfolio**. Les Securities (titres) sont des actifs individuels pour lesquels nous pouvons récupérer les prix historiques via l'API [Alphavantage](https://www.alphavantage.co/). Les Portfolios (portefeuilles) sont composés de paniers de titres avec leurs pondérations associées. L'annexe contient les détails sur les attributs et méthodes utilisés dans chaque classe.
+
+Dans une simulation de Monte-Carlo, nous pouvons déduire le rendement et le risque les plus probables d'un panier d'actifs en nous basant sur les rendements de chaque actif (mu), le risque (sigma), et la covariance entre les actifs du portefeuille. Nous générons des rendements aléatoires normaux pour chaque titre du portefeuille, qui sont corrélés avec les autres rendements aléatoires générés. Nous pouvons ensuite déterminer le rendement pondéré du portefeuille à chaque pas de temps sur une période fixe. Cela nous permet de déterminer la valeur finale du portefeuille. Si nous générons de nombreux chemins, nous pouvons déterminer le rendement et le risque moyens du portefeuille pour un portefeuille donné.
+
+## Installation
+
+### Environnement Virtuel Python (Recommandé)
+
+Je recommande l'utilisation d'un environnement virtuel pour isoler les dépendances du projet :
+
+```bash
+# Créer un environnement virtuel
+python -m venv venv
+
+# Activer l'environnement virtuel
+# Sur Windows :
+venv\Scripts\activate
+# Sur macOS/Linux :
+source venv/bin/activate
+```
+
+### Dépendances
+
+Installer les dépendances requises :
+
+```bash
+pip install -r requirements.txt
+```
+
+### Configuration de la Clé API
+
+Ce projet utilise l'API [Alphavantage](https://www.alphavantage.co/) pour récupérer les prix historiques des titres. Vous aurez besoin de :
+
+1. Obtenir une clé API gratuite depuis [Alphavantage](https://www.alphavantage.co/support/#api-key)
+2. Créer un répertoire `keys` à la racine du projet
+3. Sauvegarder votre clé API dans `keys/alphavantage.txt`
+
+```bash
+mkdir keys
+echo "API_KEY" > keys/alphavantage.txt
+```
+
+## Structure du Projet
+
+```
+monte-carlo-for-investments/
+├── config/
+│   ├── base_conf.yaml              # Configuration de base (simulation + frontier)
+│   └── portfolios/
+│       ├── example.yaml            # Exemple de portefeuille
+│       └── core_satellite_1.yaml   # Portefeuille Core-Satellite
+├── src/
+│   ├── __init__.py
+│   ├── cli.py                      # Interface en ligne de commande
+│   ├── config.py                   # Constantes globales
+│   ├── main.py                     # Fonctions métier (create_portfolio, run_simulate, run_frontier)
+│   ├── models.py                   # Classes Security, Equity, LeveragedEquity, Portfolio
+│   ├── schemas.py                  # Validation Pydantic des fichiers YAML
+│   ├── simulation.py               # Logique Monte-Carlo
+│   ├── utils.py                    # Fonctions utilitaires
+│   └── visualization.py            # Graphiques Plotly
+├── keys/
+│   └── alphavantage.txt            # Clé API (non versionnée)
+├── monte_carlo.ipynb               # Notebook de démonstration
+├── requirements.txt
+└── README.md
+```
+
+## Utilisation
+
+### Option 1 : Interface en Ligne de Commande (CLI)
+
+Le CLI permet de lancer des simulations ou construire des frontières efficientes directement depuis le terminal.
+
+#### Commandes disponibles
+
+```bash
+# Afficher l'aide
+python -m src.cli --help
+
+# Simulation Monte-Carlo
+python -m src.cli simulate --portfolio config/portfolios/example.yaml --config config/base_conf.yaml
+
+# Frontière efficiente
+python -m src.cli frontier --portfolio config/portfolios/example.yaml --config config/base_conf.yaml
+
+# Options supplémentaires
+python -m src.cli simulate -p config/portfolios/example.yaml -c config/base_conf.yaml --no-plots --quiet
+python -m src.cli frontier -p config/portfolios/example.yaml -c config/base_conf.yaml --top-n 10
+```
+
+#### Fichiers de Configuration
+
+**Portfolio YAML** (`config/portfolios/example.yaml`) :
+
+```yaml
+securities:
+  - name: "S&P 500 ETF"
+    identifier: "SPY"
+    mu: 0.10 # Rendement annuel attendu
+    sigma: 0.15 # Volatilité annuelle
+    type: "equity"
+
+  - name: "NASDAQ-100 2x Leveraged"
+    identifier: "QLD"
+    base: "QQQ" # Titre sous-jacent
+    leverage: 2
+    type: "leveraged"
+
+portfolio:
+  name: "Mon Portefeuille"
+  value: 100000
+  weights: [0.60, 0.40]
+
+rebalancing: false
+```
+
+**Configuration YAML** (`config/base_conf.yaml`) :
+
+```yaml
+general:
+  rf: 0.04
+  conf_level: 0.95
+  price_start_year: 2013
+
+simulation:
+  simulations: 1000
+  years: 20
+  frequency: "daily"
+
+frontier:
+  total_weight: 100
+  min_weight: 0
+  max_weight: 100
+  weight_increment: 10
+  num_sims: 50
+  years: 10
+  frequency: "monthly"
+```
+
+### Option 2 : Notebook Jupyter
+
+Pour une utilisation interactive avec visualisations :
+
+```bash
+jupyter notebook optimize_invest.ipynb
+```
+
+## Validation des Fichiers YAML
+
+Les fichiers de configuration sont validés automatiquement avec Pydantic. En cas d'erreur, un message clair indique le problème :
+
+```
+Erreur de validation dans config/portfolios/test.yaml:
+  - portfolio -> weights: La somme des poids doit être égale à 1 (actuel: 0.5)
+  - securities -> 0 -> identifier: Field required
+  - ...
+```
+
+## Prix des Securities (Actifs)
+
+L'API Alphavantage a été utilisée pour collecter les prix mensuels de 8 titres. À partir des prix, nous pouvons calculer le rendement moyen, la volatilité (écart-type des rendements), et les corrélations des rendements entre chaque titre sous forme de matrice de covariance.
+![image](https://user-images.githubusercontent.com/1649676/215936189-a17f9410-1bc5-4f7e-a7c0-63912f9bdfea.png)
+![image](https://user-images.githubusercontent.com/1649676/215936252-53c6971d-ecd0-43c5-b9f4-a51713f9e08f.png)
+
+## Monte-Carlo : Simulation de Portefeuille
+
+Nous commençons avec un portefeuille de titres pondérés et générons 100 chemins possibles. Pour que notre simulation soit réaliste, il est important que nos rendements générés aléatoirement soient **corrélés** entre eux.
+
+Par exemple, si les rendements de deux titres ont une corrélation de +0.80, nous devons nous assurer que nos rendements générés aléatoirement ont une corrélation similaire. Le graphique ci-dessous montre les 100 chemins possibles qu'un portefeuille avec une valeur initiale de 100k a suivi sur une période de 10 ans. À partir d'une simulation test, nous pouvons calculer le rendement annualisé moyen du portefeuille (2.0%) et la volatilité (9.68%).
+
+![image](https://user-images.githubusercontent.com/1649676/216056238-5ca11045-4dc9-4fd4-8a7d-775712c594fb.png)
+
+## Frontière Efficiente
+
+La théorie moderne du portefeuille suggère que nous devrions être récompensés pour investir dans des actifs risqués. Une mesure standard du rapport risque/récompense est le **ratio de Sharpe**. C'est un ratio du rendement attendu du portefeuille moins le rendement que nous pouvons attendre d'un actif sans risque (comme un bon du Trésor), divisé par la volatilité attendue du portefeuille. Plus le ratio est élevé, meilleur est le rendement ajusté au risque.
+
+`ratio de Sharpe = (Rendement Attendu - Taux Sans Risque) / Volatilité Attendue`
+
+Notre portefeuille de départ avec des titres équipondérés a un ratio de Sharpe de -0.20\*. Cela signifie que nous ne sommes pas suffisamment récompensés pour investir dans des actifs risqués sur une base ajustée au risque. Autrement dit, nous ferions mieux d'investir dans des bons du Trésor qui ont un rendement garanti susceptible d'entraîner une valeur de portefeuille plus élevée.
+
+\*_en supposant un taux sans risque de 4.0%, ce que les bons du Trésor américains rapportaient au moment de l'écriture_
+
+Nous pouvons utiliser des simulations de Monte-Carlo pour trouver le portefeuille optimal à partir du panier de titres en ajustant systématiquement chaque pondération de titre, en exécutant une simulation, et en suivant le rendement et le risque attendus. Nous pouvons ensuite tracer chaque portefeuille par rendement/risque. Le graphique ci-dessous montre les résultats de la simulation suivante :
+
+- Ajuster les pondérations des 8 titres par incréments de 10% (c.-à-d. 0%, 10%, 20%, 30%)
+- Aucun titre individuel ne devrait avoir une pondération supérieure à 30% du portefeuille
+- Nous n'avons pas besoin de détenir les huit titres
+- Simuler chaque combinaison de pondérations possible et calculer le rendement attendu, le risque et le ratio de Sharpe
+
+Nous pouvons voir sur le graphique que nous préférerions les portefeuilles sur le bord supérieur car ils ont des rendements attendus plus élevés par unité de risque attendu. Ce graphique est connu sous le nom de frontière efficiente. Les couleurs représentent le ratio de Sharpe.
+
+![image](https://user-images.githubusercontent.com/1649676/216845740-c0d9067e-4022-4783-8073-d851d4b097bf.png)
+
+### Pondérations les Plus Efficientes
+
+Le tableau ci-dessous montre les pondérations des cinq meilleurs portefeuilles triés par ratio de Sharpe. Comme vous pouvez le voir, la simulation a révélé que les meilleurs portefeuilles ajustés au risque détiennent entre 4 et 6 des 8 titres.
+
+![image](https://user-images.githubusercontent.com/1649676/216845702-0c7e8dc0-86af-4b64-bb53-697f7d99f571.png)
+
+## Simulation de Monte-Carlo : Risque, Rendement et Ratio de Sharpe Attendus
+
+Nous pouvons maintenant sélectionner l'un des meilleurs portefeuilles et relancer la simulation de Monte-Carlo pour voir comment notre portefeuille optimal se compare à notre portefeuille de départ. Dans ce cas, nous avons exécuté la simulation 2 500 fois.
+
+### Chemins de Simulation
+
+Le premier graphique montre les 2 500 chemins possibles qu'a pris notre portefeuille dans la simulation.
+
+![image](https://user-images.githubusercontent.com/1649676/216846052-2ab2d807-e192-47e4-9796-1c032d34ac6a.png)
+
+### Distributions Rendement/Risque
+
+Les boîtes à moustaches montrent la distribution des rendements et de la volatilité du portefeuille. Les distributions de la valeur conditionnelle à risque (CVaR) et du drawdown maximum fournissent des informations sur le potentiel de baisse du portefeuille.
+
+![image](https://user-images.githubusercontent.com/1649676/216846071-527a9b2b-1ae0-49fa-838e-c8634d03b2a3.png)
+![image](https://user-images.githubusercontent.com/1649676/216846086-61980918-28d3-4af5-94fd-d2b8bf7a9e23.png)
+
+### Valeur Attendue du Portefeuille après 10 Ans
+
+Le portefeuille optimal a un rendement attendu de 5.51%, un risque de 13.08%, et un ratio de Sharpe de 0.12. Le portefeuille a le plus de chances d'avoir une valeur finale entre $103,268 et $267,331. C'est une grande amélioration par rapport au portefeuille de départ avec des titres équipondérés.
+
+Allocations
+
+- SPDR S&P 500 ETF Trust : 30.0%
+- iShares MSCI EAFE : 10.0%
+- Mackenzie Canadian Equity Index : 30.0%
+- BMO Aggregate Bond Index : 10.0%
+- Gold ETF : 20.0%
+
+Vous pouvez également utiliser cette méthode pour évaluer des portefeuilles avec différents titres et pondérations.
+
+![image](https://user-images.githubusercontent.com/1649676/216846107-0d9beec6-0150-479c-849d-c979ec131056.png)
+
+## Annexe
+
+### Classes de Titres
+
+#### Security (classe de base)
+
+- `name` : nom du titre
+- `identifier` : ticker (utilisé pour interroger Alphavantage)
+- `mu` : rendement moyen annuel
+- `sigma` : volatilité annuelle (écart-type des rendements)
+
+#### Equity
+
+Titre classique (actions, ETF) avec mu et sigma définis manuellement.
+
+#### LeveragedEquity
+
+Titre à effet de levier basé sur un autre titre. Les rendements sont calculés automatiquement à partir du titre sous-jacent et du facteur de levier.
+
+### Classe Portfolio
+
+Un portefeuille contient des titres avec des pondérations spécifiques.
+
+**Attributs :**
+
+- `name` : nom du portefeuille
+- `securities` : liste de titres
+- `target_weights` : pondérations associées à chaque titre
+- `portfolio_value` : valeur initiale du portefeuille
+- `rf` : taux sans risque (format décimal)
+- `cov` : matrice de covariance des rendements
+- `simulation_results` : résultats de la simulation Monte-Carlo
+- `mean_return`, `mean_volatility`, `sharpe_ratio` : métriques calculées
+
+**Méthodes principales :**
+
+- `calc_covariance()` : calculer la matrice de covariance
+- `get_security_prices(yr, plot, requests_per_min)` : récupérer les prix via Alpha Vantage
+- `run_simulation(simulations, years, frequency, rebalancing)` : exécuter la simulation
+- `build_efficient_frontier(...)` : construire la frontière efficiente
+- `get_optimal_portfolios_by_sharpe_ratio(top_n)` : obtenir les meilleurs portefeuilles
+- `plot_portfolio_simulations()`, `plot_efficient_frontier()`, `plot_boxplots()` : visualisations
+
+### Fonctions Métier (src/main.py)
+
+- `create_portfolio(securities, ...)` : créer un portefeuille à partir d'objets Security
+- `run_simulate(portfolio, ...)` : exécuter une simulation Monte-Carlo
+- `run_frontier(portfolio, ...)` : construire la frontière efficiente
