@@ -6,6 +6,9 @@ Ce module contient toutes les fonctions de visualisation Plotly
 pour les titres et portefeuilles.
 """
 
+from pathlib import Path
+from typing import Optional, Union
+
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -54,12 +57,13 @@ def plot_security_prices(security):
 # VISUALISATION DES PORTEFEUILLES
 # =============================================================================
 
-def plot_portfolio_boxplots(portfolio):
+def plot_portfolio_boxplots(portfolio, save_path: Optional[Union[str, Path]] = None):
     """
     Affiche les distributions de rendement/risque en boxplots.
     
     Args:
         portfolio: objet Portfolio avec simulation_results
+        save_path: si fourni, enregistre le graphique en HTML au lieu de l'afficher
     """
     if portfolio.simulation_results is None:
         print("❌ Pas de résultats de simulation. Exécutez run_simulation() d'abord.")
@@ -121,15 +125,19 @@ def plot_portfolio_boxplots(portfolio):
         col=2
     )
     fig.update_layout(template='plotly_white', width=700, height=900, showlegend=False, title="Distributions Rendement/Risque")
-    fig.show()
+    if save_path is not None:
+        fig.write_html(str(save_path))
+    else:
+        fig.show()
 
 
-def plot_portfolio_histograms(portfolio):
+def plot_portfolio_histograms(portfolio, save_path: Optional[Union[str, Path]] = None):
     """
     Affiche les histogrammes de rendement/risque.
     
     Args:
         portfolio: objet Portfolio avec simulation_results
+        save_path: si fourni, enregistre le graphique en HTML au lieu de l'afficher
     """
     if portfolio.simulation_results is None:
         print("❌ Pas de résultats de simulation. Exécutez run_simulation() d'abord.")
@@ -145,15 +153,19 @@ def plot_portfolio_histograms(portfolio):
     fig.add_trace(go.Histogram(x=pr, name='CAGR', marker_color=Colors.PRIMARY_DARK, hovertemplate=hover_temp_return), row=1, col=1)
     fig.add_trace(go.Histogram(x=pv, name='Volatilité', marker_color=Colors.PRIMARY_ALPHA, hovertemplate=hover_temp_risk), row=1, col=2)
     fig.update_layout(template='plotly_white', title_text='Histogrammes', width=700, height=500)
-    fig.show()
+    if save_path is not None:
+        fig.write_html(str(save_path))
+    else:
+        fig.show()
 
 
-def plot_portfolio_simulations(portfolio):
+def plot_portfolio_simulations(portfolio, save_path: Optional[Union[str, Path]] = None):
     """
     Affiche les chemins de simulation du portefeuille.
     
     Args:
         portfolio: objet Portfolio avec simulation_results, portfolio_value, cagr_mean, mean_volatility
+        save_path: si fourni, enregistre le graphique en HTML au lieu de l'afficher
     """
     if portfolio.simulation_results is None:
         print("❌ Pas de résultats de simulation. Exécutez run_simulation() d'abord.")
@@ -184,15 +196,19 @@ def plot_portfolio_simulations(portfolio):
         height=500,
         showlegend=False
     )
-    fig.show()
+    if save_path is not None:
+        fig.write_html(str(save_path))
+    else:
+        fig.show()
 
 
-def plot_portfolio_expected_values(portfolio):
+def plot_portfolio_expected_values(portfolio, save_path: Optional[Union[str, Path]] = None):
     """
     Affiche les valeurs attendues avec bandes de confiance.
     
     Args:
         portfolio: objet Portfolio avec expected_values, simulation_results, portfolio_value, sharpe_ratio, cagr_mean
+        save_path: si fourni, enregistre le graphique en HTML au lieu de l'afficher
     """
     if portfolio.expected_values is None or portfolio.simulation_results is None:
         print("❌ Pas de résultats de simulation. Exécutez run_simulation() d'abord.")
@@ -269,15 +285,19 @@ def plot_portfolio_expected_values(portfolio):
         height=500,
         legend=dict(yanchor='top', y=0.97, xanchor='left', x=0.03)
     )
-    fig.show()
+    if save_path is not None:
+        fig.write_html(str(save_path))
+    else:
+        fig.show()
 
 
-def plot_efficient_frontier(portfolio):
+def plot_efficient_frontier(portfolio, save_path: Optional[Union[str, Path]] = None):
     """
     Affiche le graphique de la frontière efficiente.
     
     Args:
         portfolio: objet Portfolio avec efficient_frontier, securities
+        save_path: si fourni, enregistre le graphique en HTML au lieu de l'afficher
     """
     if portfolio.efficient_frontier is None:
         print("❌ Pas de frontière efficiente. Exécutez build_efficient_frontier() d'abord.")
@@ -318,4 +338,7 @@ def plot_efficient_frontier(portfolio):
     fig.update_layout(template='plotly_white', width=700, height=500, title=title, legend_title='Poids du Portefeuille', hovermode="y")
     fig.update_xaxes(range=[x_min, x_max], title='Risque (%)')
     fig.update_yaxes(range=[y_min, y_max], title='Rendement (%)')
-    fig.show()
+    if save_path is not None:
+        fig.write_html(str(save_path))
+    else:
+        fig.show()

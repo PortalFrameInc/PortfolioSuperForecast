@@ -6,9 +6,16 @@ Ces fonctions de haut niveau encapsulent les workflows complets et seront
 utilisées par le CLI.
 """
 
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 from .models import Portfolio, Equity, LeveragedEquity
+from .visualization import (
+    plot_portfolio_boxplots,
+    plot_portfolio_expected_values,
+    plot_portfolio_simulations,
+    plot_efficient_frontier,
+)
 from .config import RF, CONF_LEVEL
 
 def create_securities_from_config(securities_config: list, rf: float = RF, conf_level: float = CONF_LEVEL) -> list:
@@ -80,7 +87,8 @@ def run_monte_carlo_simulation(
     frequency: str = "monthly",
     rebalancing: bool = False,
     show_plots: bool = False,
-    verbose: bool = True
+    verbose: bool = True,
+    output_dir: Optional[Union[str, Path]] = None
 ) -> dict:
     """
     Exécute une simulation Monte-Carlo sur un portefeuille.
@@ -96,8 +104,9 @@ def run_monte_carlo_simulation(
         years: durée de la simulation en années
         frequency: fréquence ('daily', 'monthly', 'quarterly', 'annual')
         rebalancing: si True, rééquilibre à chaque période
-        show_plots: si True, affiche les graphiques
+        show_plots: si True, affiche les graphiques (ou les enregistre si output_dir est fourni)
         verbose: si True, affiche les informations de progression
+        output_dir: si fourni, enregistre les graphiques en HTML dans ce dossier (au lieu de les afficher)
         
     Returns:
         Dictionnaire contenant les résultats de la simulation :
@@ -117,7 +126,7 @@ def run_monte_carlo_simulation(
         print(f"   Durée: {years} ans")
         print(f"   Fréquence: {frequency}")
         print(f"   Rééquilibrage: {'Oui' if rebalancing else 'Non'}")
-        print("=" * 60)
+        print("=" * 80)
     
     # Exécuter la simulation
     portfolio.run_simulation(
@@ -127,11 +136,18 @@ def run_monte_carlo_simulation(
         rebalancing=rebalancing
     )
     
-    # Afficher les graphiques
+    # Afficher ou enregistrer les graphiques
     if show_plots:
-        portfolio.plot_portfolio_simulations()
-        portfolio.plot_boxplots()
-        portfolio.plot_expected_values()
+        out = Path(output_dir) if output_dir else None
+        if out is not None:
+            out.mkdir(parents=True, exist_ok=True)
+            plot_portfolio_simulations(portfolio, save_path=out / "simulations.html")
+            plot_portfolio_boxplots(portfolio, save_path=out / "boxplots.html")
+            plot_portfolio_expected_values(portfolio, save_path=out / "expected_values.html")
+        else:
+            portfolio.plot_portfolio_simulations()
+            portfolio.plot_boxplots()
+            portfolio.plot_expected_values()
     
     # Afficher le résumé
     if verbose:
@@ -168,7 +184,8 @@ def build_efficient_frontier(
     show_plot: bool = False,
     top_n: int = 5,
     verbose: int = 1000,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    output_dir: Optional[Union[str, Path]] = None
 ) -> dict:
     """
     Construit la frontière efficiente d'un portefeuille.
@@ -188,10 +205,11 @@ def build_efficient_frontier(
         years: durée de simulation
         frequency: fréquence de simulation
         rebalancing: si True, rééquilibre à chaque période
-        show_plot: si True, affiche le graphique de la frontière
+        show_plot: si True, affiche le graphique (ou l'enregistre si output_dir est fourni)
         top_n: nombre de meilleurs portefeuilles à retourner
         verbose: afficher la progression tous les N portefeuilles
         seed: graine aléatoire pour la reproductibilité
+        output_dir: si fourni, enregistre le graphique en HTML dans ce dossier (au lieu de l'afficher)
         
     Returns:
         Dictionnaire contenant :
@@ -219,7 +237,7 @@ def build_efficient_frontier(
     print(f"   Total de simulations: {num_combinations * num_sims:,}")
     print(f"   Durée: {years} ans")
     print(f"   Fréquence: {frequency}")
-    print("=" * 60)
+    print("=" * 80)
     
     if num_combinations == 0:
         print("❌ Aucune combinaison de poids valide. Ajustez les paramètres.")
@@ -238,9 +256,14 @@ def build_efficient_frontier(
         seed=seed
     )
     
-    # Afficher le graphique
+    # Afficher ou enregistrer le graphique
     if show_plot:
-        portfolio.plot_efficient_frontier()
+        out = Path(output_dir) if output_dir else None
+        if out is not None:
+            out.mkdir(parents=True, exist_ok=True)
+            plot_efficient_frontier(portfolio, save_path=out / "efficient_frontier.html")
+        else:
+            portfolio.plot_efficient_frontier()
     
     # Récupérer les meilleurs portefeuilles
     top_sharpe = portfolio.get_optimal_portfolios_by_sharpe_ratio(top_n)
@@ -249,9 +272,9 @@ def build_efficient_frontier(
     top_cagr = portfolio.get_optimal_portfolios_by_cagr_median(top_n)
     
     # Afficher les résultats
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
     print(f"🏆 Top {top_n} Portefeuilles par Sharpe Ratio Géométrique")
-    print("=" * 60)
+    print("=" * 80)
     print(top_sharpe[['weights', 'cagr_mean', 'expected-risk', 'sharpe-ratio']].to_string())
     
     return {

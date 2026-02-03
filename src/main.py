@@ -4,7 +4,9 @@ Fonctions métier pour Monte Carlo Portfolio Simulations.
 Ce module expose des fonctions réutilisables dans le CLI ou un notebook.
 """
 
-from typing import List, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import List, Optional, Union
 
 from src import (
     RF,
@@ -86,10 +88,15 @@ def run_simulate(
     frequency: str = "daily",
     rebalancing: bool = False,
     show_plots: bool = True,
-    verbose: bool = True
+    verbose: bool = True,
+    report_path: Optional[Union[str, Path]] = None
 ):
     """
     Exécute une simulation Monte-Carlo sur un portefeuille.
+    
+    Si report_path est fourni (ex: depuis le CLI), le rapport texte et les graphiques
+    sont enregistrés dans ce dossier. Sinon (ex: dans un notebook), tout s'affiche
+    dans la sortie standard / notebook.
     
     Args:
         portfolio: Instance du portefeuille
@@ -97,21 +104,36 @@ def run_simulate(
         years: Durée de la simulation en années
         frequency: Fréquence de simulation ("daily", "monthly", "quarterly", "annual")
         rebalancing: Activer le rééquilibrage périodique
-        show_plots: Afficher les graphiques
+        show_plots: Afficher les graphiques (ignoré si report_path est fourni : on enregistre uniquement)
         verbose: Afficher les messages de progression
+        report_path: Si fourni, enregistre le rapport et les figures dans ce dossier (mode CLI)
     
     Returns:
         Résultats de la simulation
     """
+    out_dir = Path(report_path) if report_path else None
+    if out_dir is not None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    # En mode rapport : toujours générer les figures (enregistrées dans output_dir, pas affichées)
+    do_plots = show_plots if out_dir is None else True
+    
     results = run_monte_carlo_simulation(
         portfolio=portfolio,
         simulations=simulations,
         years=years,
         frequency=frequency,
         rebalancing=rebalancing,
-        show_plots=show_plots,
-        verbose=verbose
+        show_plots=do_plots,
+        verbose=verbose,
+        output_dir=out_dir
     )
+    
+    if out_dir is not None and results:
+        report_file = out_dir / "report.txt"
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write(str(results["portfolio"]))
+        if verbose:
+            print(f"Rapport enregistré dans: {out_dir}")
     
     return results
 
@@ -127,10 +149,15 @@ def run_frontier(
     rebalancing: bool = False,
     show_plot: bool = True,
     top_n: int = 5,
-    verbose: int = 1000
+    verbose: int = 1000,
+    report_path: Optional[Union[str, Path]] = None
 ):
     """
     Construit la frontière efficiente.
+    
+    Si report_path est fourni (ex: depuis le CLI), le rapport et le graphique
+    sont enregistrés dans ce dossier. Sinon (ex: dans un notebook), tout s'affiche
+    dans la sortie standard / notebook.
     
     Args:
         portfolio: Instance du portefeuille
@@ -141,13 +168,18 @@ def run_frontier(
         years: Durée de simulation en années
         frequency: Fréquence de simulation
         rebalancing: Activer le rééquilibrage périodique
-        show_plot: Afficher le graphique
+        show_plot: Afficher le graphique (ignoré si report_path est fourni : on enregistre uniquement)
         top_n: Nombre de meilleurs portefeuilles à retourner
         verbose: Niveau de verbosité (0 = silencieux)
+        report_path: Si fourni, enregistre le rapport et les figures dans ce dossier (mode CLI)
     
     Returns:
         Résultats de la frontière efficiente
     """
+    out_dir = Path(report_path) if report_path else None
+    # En mode rapport : toujours générer le graphique (enregistré dans output_dir, pas affiché)
+    do_plot = show_plot if out_dir is None else True
+    
     results = build_efficient_frontier(
         portfolio=portfolio,
         min_weight=min_weight,
@@ -157,10 +189,31 @@ def run_frontier(
         years=years,
         frequency=frequency,
         rebalancing=rebalancing,
-        show_plot=show_plot,
+        show_plot=do_plot,
         top_n=top_n,
-        verbose=verbose
+        verbose=verbose,
+        output_dir=out_dir
     )
+    
+    if out_dir is not None and results:
+        report_file = out_dir / "report.txt"
+        lines = [
+            f"Frontière efficiente - {portfolio.name}",
+            "=" * 60,
+            "",
+            f"Top {top_n} portefeuilles par Sharpe Ratio:",
+            results["top_portfolios_sharpe"][["weights", "cagr_mean", "expected-risk", "sharpe-ratio"]].to_string(),
+            "",
+            f"Top {top_n} portefeuilles par Sortino Ratio:",
+            results["top_portfolios_sortino"][["weights", "cagr_mean", "expected-risk", "sortino-ratio"]].to_string(),
+            "",
+            f"Top {top_n} portefeuilles par CVaR Ratio:",
+            results["top_portfolios_cvar"][["weights", "cagr_mean", "expected-risk", "cvar-ratio"]].to_string(),
+        ]
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        if verbose:
+            print(f"Rapport enregistré dans: {out_dir}")
     
     return results
 
@@ -209,10 +262,13 @@ def create_portfolio_from_config(config: dict, verbose: bool = True) -> Portfoli
 def cmd_simulate(args, config_data: dict):
     """
     Commande CLI: Exécuter une simulation Monte-Carlo.
+    Crée un rapport dans runs/simulate_<timestamp>/.
     """
     portfolio = create_portfolio_from_config(config_data, verbose=not args.quiet)
     
     sim_config = config_data.get('simulation', {})
+    report_dir = Path("runs") / f"simulate_{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    report_dir.mkdir(parents=True, exist_ok=True)
     
     return run_simulate(
         portfolio=portfolio,
@@ -221,17 +277,21 @@ def cmd_simulate(args, config_data: dict):
         frequency=sim_config.get('frequency', 'daily'),
         rebalancing=config_data.get('rebalancing', False),
         show_plots=not args.no_plots,
-        verbose=not args.quiet
+        verbose=not args.quiet,
+        report_path=report_dir
     )
 
 
 def cmd_frontier(args, config_data: dict):
     """
     Commande CLI: Construire la frontière efficiente.
+    Crée un rapport dans runs/frontier_<timestamp>/.
     """
     portfolio = create_portfolio_from_config(config_data, verbose=not args.quiet)
     
     frontier_config = config_data.get('frontier', {})
+    report_dir = Path("runs") / f"frontier_{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    report_dir.mkdir(parents=True, exist_ok=True)
     
     return run_frontier(
         portfolio=portfolio,
@@ -244,5 +304,6 @@ def cmd_frontier(args, config_data: dict):
         rebalancing=config_data.get('rebalancing', False),
         show_plot=not args.no_plots,
         top_n=args.top_n,
-        verbose=0 if args.quiet else 1000
+        verbose=0 if args.quiet else 1000,
+        report_path=report_dir
     )

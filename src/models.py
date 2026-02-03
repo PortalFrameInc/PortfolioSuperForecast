@@ -423,7 +423,7 @@ class Portfolio:
     def __str__(self):
         msg = ""
         msg += f"{self.name}\n"
-        msg += "=" * 75 + "\n"
+        msg += "=" * 80 + "\n"
         msg += f"Capital investi: ${self.portfolio_value:,.0f}\n"
         
         if self.cagr_mean is not None:
@@ -862,7 +862,7 @@ class Portfolio:
         
         if robust:
             print(f"Simulation Monte-Carlo (Student-t multivariée) - {n_jobs} workers")
-            print("=" * 100)
+            print("=" * 80)
         
         results_list = Parallel(n_jobs=n_jobs, verbose=10 if robust else 0)(
             delayed(self.run_single_trajectory)(
@@ -992,7 +992,7 @@ class Portfolio:
             print(f"Simulations Frontière Efficiente: {len(weights):,.0f} Portefeuilles Possibles")
             n_workers = n_jobs if n_jobs is not None else get_optimal_n_jobs(num_sims)
             print(f"Parallélisation: {n_workers} workers pour les simulations Monte-Carlo")
-            print("=" * 100)
+            print("=" * 80)
             
         for sim, weight in enumerate(weights):
             if verbose > 0 and sim % verbose == 0:
