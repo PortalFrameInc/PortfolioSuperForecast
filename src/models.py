@@ -999,12 +999,13 @@ class Portfolio:
             n_workers = n_jobs if n_jobs is not None else get_optimal_n_jobs(num_sims)
             print(f"Parallélisation: {n_workers} workers pour les simulations Monte-Carlo")
             print("=" * 80)
+            # Affichage ~20 fois, ou toutes les 1000 combinaisons au-delà de 20 000
+            if num_eff_frontier_sims > 20000:
+                progress_step = 1000
+            else:
+                progress_step = max(1, num_eff_frontier_sims // 20)
             
         for sim, weight in enumerate(weights):
-            if verbose > 0 and sim % verbose == 0:
-                progress = round(sim / num_eff_frontier_sims, 2)
-                print(f"=>{progress * 100:,.0f}% terminé")
-                
             self.target_weights = weight
             
             frontier_seed = None if seed is None else seed + sim
@@ -1022,6 +1023,11 @@ class Portfolio:
             results['cagr-q1'].append(self.cagr_q1)
             results['cagr-median'].append(self.cagr_median)
             results['cagr-q3'].append(self.cagr_q3)
+            
+            # Affichage après chaque combinaison terminée (évite mélange avec sortie des workers)
+            if verbose > 0 and ((sim + 1) % progress_step == 0 or (sim + 1) == num_eff_frontier_sims):
+                progress = round((sim + 1) / num_eff_frontier_sims, 2)
+                print(f"=>{progress * 100:,.0f}% terminé ({sim + 1:,}/{num_eff_frontier_sims:,} portefeuilles)")
             
         self.efficient_frontier = results
         self.target_weights = self.get_optimal_portfolios_by_sharpe_ratio(1)['weights'].item()
