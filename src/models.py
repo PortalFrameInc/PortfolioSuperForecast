@@ -635,6 +635,9 @@ class Portfolio:
     def convert_from_annual(self, metric, freq, measure):
         """Convertit une métrique annuelle vers une autre fréquence."""
         if measure == 'mean':
+            # (1 + r)^t invalide si r <= -1 (perte totale) ou NaN
+            if not np.isfinite(metric) or metric <= -1:
+                return -1.0 if metric <= -1 else np.nan
             return (1 + metric) ** (1 / FREQUENCY_MAP[freq]) - 1
         elif measure == 'std':
             return metric / np.sqrt(FREQUENCY_MAP[freq])
@@ -643,6 +646,9 @@ class Portfolio:
     def convert_to_annual(self, metric, freq, years, measure):
         """Convertit une métrique vers une base annuelle."""
         if measure == 'mean':
+            # (1 + r)^(1/years) invalide si r <= -1 (perte totale) ou NaN
+            if not np.isfinite(metric) or metric <= -1:
+                return -1.0 if metric <= -1 else np.nan
             return (1 + metric) ** (1 / years) - 1
         elif measure == 'std':
             return metric * np.sqrt(FREQUENCY_MAP[freq])
