@@ -4,6 +4,7 @@ Fonctions métier pour Monte Carlo Portfolio Simulations.
 Ce module expose des fonctions réutilisables dans le CLI ou un notebook.
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
@@ -18,6 +19,11 @@ from src import (
     build_efficient_frontier,
 )
 
+def _sanitize_for_path(name: str) -> str:
+    """Rend un nom utilisable dans un chemin de dossier (supprime caractères invalides)."""
+    s = re.sub(r'[<>:"/\\|?*]', '', str(name).strip())
+    s = re.sub(r'\s+', '_', s)
+    return s or "portfolio"
 
 def create_portfolio(
     securities: List[Security],
@@ -262,12 +268,13 @@ def create_portfolio_from_config(config: dict, verbose: bool = True) -> Portfoli
 def cmd_simulate(args, config_data: dict):
     """
     Commande CLI: Exécuter une simulation Monte-Carlo.
-    Crée un rapport dans runs/simulate_<timestamp>/.
+    Crée un rapport dans runs/simulate_<nom_portfolio>_<timestamp>/.
     """
     portfolio = create_portfolio_from_config(config_data, verbose=not args.quiet)
     
     sim_config = config_data.get('simulation', {})
-    report_dir = Path("runs") / f"simulate_{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    safe_name = _sanitize_for_path(portfolio.name)
+    report_dir = Path("runs") / f"simulate_{safe_name}_{datetime.now():%Y-%m-%d_%H-%M-%S}"
     report_dir.mkdir(parents=True, exist_ok=True)
     
     return run_simulate(
@@ -285,12 +292,13 @@ def cmd_simulate(args, config_data: dict):
 def cmd_frontier(args, config_data: dict):
     """
     Commande CLI: Construire la frontière efficiente.
-    Crée un rapport dans runs/frontier_<timestamp>/.
+    Crée un rapport dans runs/frontier_<nom_portfolio>_<timestamp>/.
     """
     portfolio = create_portfolio_from_config(config_data, verbose=not args.quiet)
     
     frontier_config = config_data.get('frontier', {})
-    report_dir = Path("runs") / f"frontier_{datetime.now():%Y-%m-%d_%H-%M-%S}"
+    safe_name = _sanitize_for_path(portfolio.name)
+    report_dir = Path("runs") / f"frontier_{safe_name}_{datetime.now():%Y-%m-%d_%H-%M-%S}"
     report_dir.mkdir(parents=True, exist_ok=True)
     
     return run_frontier(

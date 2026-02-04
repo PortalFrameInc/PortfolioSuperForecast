@@ -5,6 +5,12 @@ securities:
     sigma: 0.14
     type: "equity"
 
+  - name: "NASDAQ-100 ETF"
+    identifier: "QQQ"
+    mu: 0.12
+    sigma: 0.20
+    type: "equity"
+
   - name: "Nasdaq 100 ETF 2x Leveraged"
     identifier: "QLD"
     base: "QQQ"
@@ -12,9 +18,8 @@ securities:
     type: "leveraged"
 
 portfolio:
-  name: "ETFs Diversifiés"
+  name: "CS1"
   value: 100000
-  weights: [0.85, 0.15]
+  weights: [0.85, 0, 0.15]
 
-rebalancing: false
-
+rebalancing: true

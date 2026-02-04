@@ -1,4 +1,4 @@
-# Configuration de base
+# Gère la frontier en daily
 general:
   rf: 0.04
   conf_level: 0.95
@@ -15,4 +15,4 @@ frontier:
   weight_increment: 5 # Incrément des poids (10%)
   num_sims: 100 # Simulations par combinaison
   years: 10 # Durée de simulation
-  frequency: "monthly" # Fréquence
+  frequency: "daily" # Fréquence
