@@ -13,6 +13,6 @@ frontier:
   min_weight: 0 # Poids minimum par titre (0 = peut être exclu)
   max_weight: 100 # Poids maximum par titre
   weight_increment: 5 # Incrément des poids (10%)
-  num_sims: 100 # Simulations par combinaison
+  num_sims: 200 # Simulations par combinaison
   years: 10 # Durée de simulation
   frequency: "daily" # Fréquence
