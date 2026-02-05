@@ -135,8 +135,9 @@ def run_simulate(
     )
     
     if out_dir is not None and results:
-        report_file = out_dir / "report.txt"
+        report_file = out_dir / "report.md"
         with open(report_file, "w", encoding="utf-8") as f:
+            f.write(f"# Simulation Monte-Carlo — {results['portfolio'].name}\n\n")
             f.write(str(results["portfolio"]))
         if verbose:
             print(f"Rapport enregistré dans: {out_dir}")
@@ -202,19 +203,30 @@ def run_frontier(
     )
     
     if out_dir is not None and results:
-        report_file = out_dir / "report.txt"
+        report_file = out_dir / "report.md"
+        df_cols_sharpe = ["weights", "cagr_mean", "expected-risk", "sharpe-ratio"]
+        df_cols_sortino = ["weights", "cagr_mean", "expected-risk", "sortino-ratio"]
+        df_cols_cvar = ["weights", "cagr_mean", "expected-risk", "cvar-ratio"]
         lines = [
-            f"Frontière efficiente - {portfolio.name}",
-            "=" * 60,
+            f"# Frontière efficiente — {portfolio.name}",
             "",
-            f"Top {top_n} portefeuilles par Sharpe Ratio:",
-            results["top_portfolios_sharpe"][["weights", "cagr_mean", "expected-risk", "sharpe-ratio"]].to_string(),
+            f"## Top {top_n} portefeuilles par Sharpe Ratio",
             "",
-            f"Top {top_n} portefeuilles par Sortino Ratio:",
-            results["top_portfolios_sortino"][["weights", "cagr_mean", "expected-risk", "sortino-ratio"]].to_string(),
+            "```",
+            results["top_portfolios_sharpe"][df_cols_sharpe].to_string(),
+            "```",
             "",
-            f"Top {top_n} portefeuilles par CVaR Ratio:",
-            results["top_portfolios_cvar"][["weights", "cagr_mean", "expected-risk", "cvar-ratio"]].to_string(),
+            f"## Top {top_n} portefeuilles par Sortino Ratio",
+            "",
+            "```",
+            results["top_portfolios_sortino"][df_cols_sortino].to_string(),
+            "```",
+            "",
+            f"## Top {top_n} portefeuilles par CVaR Ratio",
+            "",
+            "```",
+            results["top_portfolios_cvar"][df_cols_cvar].to_string(),
+            "```",
         ]
         with open(report_file, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))

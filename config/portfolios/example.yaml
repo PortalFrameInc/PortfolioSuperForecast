@@ -20,7 +20,7 @@ securities:
 
 # Configuration du portefeuille
 portfolio:
-  name: "ETFs Diversifiés"
+  name: "Example"
   value: 100000
   weights: [0.35, 0.35, 0.30]
 
