@@ -2,6 +2,7 @@ numpy
 pandas
 requests
 plotly
+kaleido
 joblib
 pyyaml
 typer

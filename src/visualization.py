@@ -17,6 +17,16 @@ import plotly.express as px
 from .config import Colors, FREQUENCY_LABELS
 
 
+def _save_fig(fig, save_path: Union[str, Path]) -> None:
+    """Enregistre la figure en HTML et en PNG (pour intégration dans un rapport Markdown)."""
+    path = Path(save_path)
+    fig.write_html(str(path))
+    try:
+        fig.write_image(str(path.with_suffix(".png")))
+    except Exception:
+        pass  # kaleido optionnel : sans lui, seul le HTML est produit
+
+
 # =============================================================================
 # VISUALISATION DES TITRES (SECURITY)
 # =============================================================================
@@ -126,7 +136,7 @@ def plot_portfolio_boxplots(portfolio, save_path: Optional[Union[str, Path]] = N
     )
     fig.update_layout(template='plotly_white', width=700, height=900, showlegend=False, title="Distributions Rendement/Risque")
     if save_path is not None:
-        fig.write_html(str(save_path))
+        _save_fig(fig, save_path)
     else:
         fig.show()
 
@@ -154,7 +164,7 @@ def plot_portfolio_histograms(portfolio, save_path: Optional[Union[str, Path]] =
     fig.add_trace(go.Histogram(x=pv, name='Volatilité', marker_color=Colors.PRIMARY_ALPHA, hovertemplate=hover_temp_risk), row=1, col=2)
     fig.update_layout(template='plotly_white', title_text='Histogrammes', width=700, height=500)
     if save_path is not None:
-        fig.write_html(str(save_path))
+        _save_fig(fig, save_path)
     else:
         fig.show()
 
@@ -197,7 +207,7 @@ def plot_portfolio_simulations(portfolio, save_path: Optional[Union[str, Path]] 
         showlegend=False
     )
     if save_path is not None:
-        fig.write_html(str(save_path))
+        _save_fig(fig, save_path)
     else:
         fig.show()
 
@@ -286,7 +296,7 @@ def plot_portfolio_expected_values(portfolio, save_path: Optional[Union[str, Pat
         legend=dict(yanchor='top', y=0.97, xanchor='left', x=0.03)
     )
     if save_path is not None:
-        fig.write_html(str(save_path))
+        _save_fig(fig, save_path)
     else:
         fig.show()
 
@@ -339,6 +349,6 @@ def plot_efficient_frontier(portfolio, save_path: Optional[Union[str, Path]] = N
     fig.update_xaxes(range=[x_min, x_max], title='Risque (%)')
     fig.update_yaxes(range=[y_min, y_max], title='Rendement (%)')
     if save_path is not None:
-        fig.write_html(str(save_path))
+        _save_fig(fig, save_path)
     else:
         fig.show()

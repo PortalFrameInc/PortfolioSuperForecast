@@ -139,6 +139,10 @@ def run_simulate(
         with open(report_file, "w", encoding="utf-8") as f:
             f.write(f"# Simulation Monte-Carlo — {results['portfolio'].name}\n\n")
             f.write(str(results["portfolio"]))
+            f.write("\n\n## Graphiques\n\n")
+            f.write("![Chemins de simulation](simulations.png)\n\n")
+            f.write("![Distributions rendement / risque](boxplots.png)\n\n")
+            f.write("![Valeurs attendues et bandes de confiance](expected_values.png)\n")
         if verbose:
             print(f"Rapport enregistré dans: {out_dir}")
     
@@ -227,6 +231,10 @@ def run_frontier(
             "```",
             results["top_portfolios_cvar"][df_cols_cvar].to_string(),
             "```",
+            "",
+            "## Graphique",
+            "",
+            "![Frontière efficiente](efficient_frontier.png)",
         ]
         with open(report_file, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
