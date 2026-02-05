@@ -23,9 +23,8 @@ def _save_fig(fig, save_path: Union[str, Path]) -> None:
     fig.write_html(str(path))
     try:
         fig.write_image(str(path.with_suffix(".png")))
-    except Exception:
-        pass  # kaleido optionnel : sans lui, seul le HTML est produit
-
+    except Exception as e:
+        print(f"❌ Erreur lors de l'enregistrement de l'image PNG avec Kaleido : {e}\n" )
 
 # =============================================================================
 # VISUALISATION DES TITRES (SECURITY)
