@@ -90,6 +90,9 @@ python -m src.cli simulate --portfolio config/portfolios/example.yaml --config c
 
 # Frontière efficiente
 python -m src.cli frontier --portfolio config/portfolios/example.yaml --config config/base_conf.yaml
+
+# Frontier us cap et world avec leverage
+python -m src.cli frontier --portfolio config/portfolios/all_etf.yaml --config config/daily_conf_frontier.yaml
 ```
 
 #### Fichiers de Configuration

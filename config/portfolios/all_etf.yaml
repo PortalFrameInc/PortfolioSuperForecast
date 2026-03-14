@@ -1,0 +1,60 @@
+# Portfolio Core + versions à levier x2
+# 4 ETFs de base (US large/small caps + monde) + leurs versions x2
+# + leurs versions à levier x2 quand elles existent
+securities:
+  # =========================================================================
+  # ETFs de base (equity)
+  # =========================================================================
+  - name: "S&P 500 ETF"
+    identifier: "SPY"
+    mu: 0.10
+    sigma: 0.15
+    type: "equity"
+
+  - name: "NASDAQ-100 ETF"
+    identifier: "QQQ"
+    mu: 0.12
+    sigma: 0.20
+    type: "equity"
+
+  - name: "Russell 2000 ETF"
+    identifier: "IWM"
+    mu: 0.08
+    sigma: 0.20
+    type: "equity"
+
+  - name: "MSCI World ETF"
+    identifier: "URTH"
+    mu: 0.09
+    sigma: 0.14
+    type: "equity"
+
+  # =========================================================================
+  # ETFs à levier x2 (leveraged)
+  # Note: Pas de x2 disponible pour VEA, VWO et URTH sur les marchés US
+  # =========================================================================
+  - name: "S&P 500 ETF 2x Leveraged"
+    identifier: "SSO"
+    base: "SPY"
+    leverage: 2
+    type: "leveraged"
+
+  - name: "NASDAQ-100 ETF 2x Leveraged"
+    identifier: "QLD"
+    base: "QQQ"
+    leverage: 2
+    type: "leveraged"
+
+  - name: "Russell 2000 ETF 2x Leveraged"
+    identifier: "UWM"
+    base: "IWM"
+    leverage: 2
+    type: "leveraged"
+
+# Configuration du portefeuille (équipondéré)
+portfolio:
+  name: "Core + Leverage"
+  value: 100000
+  weights: [0.143, 0.143, 0.143, 0.143, 0.143, 0.143, 0.142]
+
+rebalancing: true
